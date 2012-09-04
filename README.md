@@ -1,4 +1,10 @@
-lru
+lru kv(Least Recently Used) 
 ===
+introduce
 
-lru implement by c
+compile
+
+test
+
+stat
+
