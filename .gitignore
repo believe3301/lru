@@ -1,3 +1,5 @@
 *~
 *.o
-
+cscope.*
+*.so
+testapp
