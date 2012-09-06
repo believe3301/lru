@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#define MIN(a, b) (((a) > (b))?(b) : (a))
 #define MAXBYTE_DEDAULT 64 * 1024 * 1024 /* 64M */
 
 #define ITEM_size   (sizeof(lru_item))
@@ -55,13 +56,20 @@ typedef struct lru_stat {
 
 void lru_init(size_t maxbytes);
 
-void* item_get(const char *key, const size_t nkey);
+/*
+   0 success 
+   1 failed 
+   alloc value buf by caller or add refcount by item...
+*/
+int item_get(const char *key, const size_t nkey, char *buf, const size_t nbuf, size_t *nvalue);
 
 /* 0 success , 1 failed */
 int item_set(const char *key, const size_t nkey, const char *value, const size_t nvalue);
 
 void item_delete(const char *key, const size_t nkey);
 
-void print_stat(void);
+void reset_stat();
+
+void print_stat(char *buf, const int nbuf);
 
 void lru_free(void);

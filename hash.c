@@ -17,6 +17,12 @@ hash_init(const int hashpower_init)
     table = calloc(hashsize(hashpower), sizeof(void *));
 }
 
+void
+hash_free()
+{
+    free(table);
+}
+
 lru_item*
 hash_find(const char *key, const size_t nkey, const uint32_t hv)
 {
@@ -42,7 +48,7 @@ hash_insert(lru_item *it, const uint32_t hv)
 }
 
 static lru_item** 
-_hashitem_before (const char *key, const size_t nkey, const uint32_t hv) 
+hashitem_before (const char *key, const size_t nkey, const uint32_t hv) 
 {
     lru_item **pos;
 
@@ -57,7 +63,7 @@ _hashitem_before (const char *key, const size_t nkey, const uint32_t hv)
 void 
 hash_delete(const char *key, const size_t nkey, const uint32_t hv)
 {
-    lru_item **before = _hashitem_before(key, nkey, hv);
+    lru_item **before = hashitem_before(key, nkey, hv);
 
     if (*before) {
         lru_item *nxt;
