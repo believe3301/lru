@@ -66,10 +66,11 @@ int item_get(const char *key, const size_t nkey, char *buf, const size_t nbuf, s
 /* 0 success , 1 failed */
 int item_set(const char *key, const size_t nkey, const char *value, const size_t nvalue);
 
-void item_delete(const char *key, const size_t nkey);
+/* 0 hit, 1 miss */
+int item_delete(const char *key, const size_t nkey);
 
-void reset_stat();
+void stat_reset(void);
 
-void print_stat(char *buf, const int nbuf);
+void stat_print(char *buf, const int nbuf);
 
 void lru_free(void);

@@ -19,7 +19,7 @@ lru_init(const size_t maxbytes)
         memset(stat, 0, sizeof(lru_stat));
     }
     
-    if (maxbytes < 1 * 1024 * 1024) {
+    if (maxbytes <= 0) {
         stat->max_bytes = MAXBYTE_DEDAULT;
     } else {
         stat->max_bytes = maxbytes;
@@ -28,7 +28,7 @@ lru_init(const size_t maxbytes)
     hash_init(0);
 }
 
-//TODO 
+/* TODO */
 static uint32_t 
 hash(const char *key, const int nkey)
 {
@@ -175,7 +175,7 @@ item_set(const char *key, const size_t nkey, const char *value, const size_t nva
     return 0;
 }
 
-void 
+int 
 item_delete(const char *key, const size_t nkey)
 {
     stat->del_cmds++;
@@ -185,8 +185,10 @@ item_delete(const char *key, const size_t nkey)
     if (it != NULL) {
         do_item_remove_hv(it, hv);
         stat->del_hits++;
+        return 0;
     } else {
         stat->del_misses++;
+        return 1;
     }
 }
 
@@ -211,7 +213,7 @@ append_stat(char **buf, int *nbuf, char *name, const char *fmt, ...)
 }
 
 void 
-print_stat(char *buf, const int nbuf)
+stat_print(char *buf, const int nbuf)
 {
     int remaining = nbuf;
 
@@ -239,7 +241,7 @@ print_stat(char *buf, const int nbuf)
     append_stat(&buf, &remaining, "evictions","%llu",stat->evictions);
 }
 
-void reset_stat()
+void stat_reset(void)
 {
     assert(stat != NULL);
     memset(stat, 0, sizeof(struct lru_stat));

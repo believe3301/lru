@@ -17,12 +17,6 @@ hash_init(const int hashpower_init)
     table = calloc(hashsize(hashpower), sizeof(void *));
 }
 
-void
-hash_free()
-{
-    free(table);
-}
-
 lru_item*
 hash_find(const char *key, const size_t nkey, const uint32_t hv)
 {
@@ -72,4 +66,10 @@ hash_delete(const char *key, const size_t nkey, const uint32_t hv)
         (*before)->h_next = 0;   /* probably pointless, but whatever. */
         *before = nxt;
     }
+}
+
+void
+hash_free(void)
+{
+    free(table);
 }

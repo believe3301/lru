@@ -3,3 +3,4 @@
 cscope.*
 *.so
 testapp
+bench

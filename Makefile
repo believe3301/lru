@@ -1,19 +1,25 @@
 CC = gcc
-DEBUG =	-g -DERROR
-CFLAGS += -W -Wall -Werror $(DEBUG)
+CFLAGS = -W -Wall -Werror -g -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls 
+DEBUG_CFLAGS = -fprofile-arcs -ftest-coverage
+DEBUG_LDFLAGS = -lgcov
 
 LIB_OBJS = \
 	./hash.o\
 	./lru.o
 
-TEST_OBJS = \
+TESTAPP_OBJS = \
 	./test/test.o
+
+BENCH_OBJS = \
+	./test/bench.o
 
 LIBRARY = liblru.so
 
-TEST = testapp
+TESTAPP = testapp
 
-all: $(LIBRARY) $(LIBRARY_S) $(TEST)
+BENCH = bench
+
+all: $(LIBRARY) $(TESTAPP) $(BENCH)
 
 $(LIBRARY): $(LIB_OBJS)
 	$(CC) -fPIC -shared $^ -o $@
@@ -21,11 +27,21 @@ $(LIBRARY): $(LIB_OBJS)
 $(LIB_OBJS): %.o: %.c
 	$(CC) -fPIC $(CFLAGS) $^ -c -o $@
 
-$(TEST): $(TEST_OBJS)
+$(TESTAPP): $(LIBRARY) $(TESTAPP_OBJS)
 	$(CC) -L. $^ -o $@ -llru
 
-$(TEST_OBJS): %.o: %.c
+$(TESTAPP_OBJS): %.o: %.c
 	$(CC) $(CFLAGS) -I. $^ -c -o $@
+
+$(BENCH): $(LIBRARY) $(BENCH_OBJS)
+	$(CC) -L. $^ -o $@ -llru
+
+$(BENCH_OBJS): %.o: %.c
+	$(CC) $(CFLAGS) -I. $^ -c -o $@
+
+test: $(TESTAPP) $(BENCH)
+	./$(TESTAPP)
+	./$(BENCH)
 
 clean:
 	-rm -f $(LIB_OBJS)	$(TEST_OBJS)
