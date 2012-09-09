@@ -44,5 +44,5 @@ test: $(TESTAPP) $(BENCH)
 	./$(BENCH)
 
 clean:
-	-rm -f $(LIB_OBJS)	$(TEST_OBJS)
-	-rm -f $(LIBRARY)  $(TEST)
+	-rm -f $(LIB_OBJS)	$(TESTAPP_OBJS) $(BENCH_OBJS)
+	-rm -f $(LIBRARY)  $(TESTAPP) $(BENCH)
