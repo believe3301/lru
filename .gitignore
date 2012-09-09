@@ -1,5 +1,6 @@
 *~
 *.o
+*.log
 cscope.*
 *.so
 testapp

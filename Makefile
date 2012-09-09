@@ -27,14 +27,14 @@ $(LIBRARY): $(LIB_OBJS)
 $(LIB_OBJS): %.o: %.c
 	$(CC) -fPIC $(CFLAGS) $^ -c -o $@
 
-$(TESTAPP): $(LIBRARY) $(TESTAPP_OBJS)
-	$(CC) -L. $^ -o $@ -llru
+$(TESTAPP): $(LIB_OBJS) $(TESTAPP_OBJS)
+	$(CC) $^ -o $@ 
 
 $(TESTAPP_OBJS): %.o: %.c
 	$(CC) $(CFLAGS) -I. $^ -c -o $@
 
-$(BENCH): $(LIBRARY) $(BENCH_OBJS)
-	$(CC) -L. $^ -o $@ -llru
+$(BENCH): $(LIB_OBJS) $(BENCH_OBJS)
+	$(CC) $^ -o $@ 
 
 $(BENCH_OBJS): %.o: %.c
 	$(CC) $(CFLAGS) -I. $^ -c -o $@

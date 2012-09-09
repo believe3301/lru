@@ -25,6 +25,7 @@ lru_init(const size_t maxbytes)
         stat->max_bytes = maxbytes;
     }
 
+
     hash_init(0);
 }
 
@@ -107,7 +108,6 @@ item_alloc(const size_t sz, lru_item *old)
     int delta = old ? old->nbytes : 0;
     if ((stat->curr_bytes + sz - delta) <= stat->max_bytes) {
         
-        stat->malloc ++;
         m = malloc(sz);
         if (!m) {
             stat->malloc_failed += 1;
@@ -124,9 +124,12 @@ item_alloc(const size_t sz, lru_item *old)
         while((it != NULL) && (stat->curr_bytes + sz - delta) > stat->max_bytes) {
             if (it != old) {
                 do_item_remove(it);
+                it = tail;
+            } else {
+                it = tail->prev;
             }
+
             stat->evictions ++;
-            it = tail;
         }
         m = malloc(sz);
         if (!m) {
@@ -134,6 +137,7 @@ item_alloc(const size_t sz, lru_item *old)
             return NULL;
         }
     }
+    stat->malloc ++;
     stat->curr_bytes += sz;
     stat->total_bytes += sz;
     stat->curr_items ++;
@@ -244,7 +248,9 @@ stat_print(char *buf, const int nbuf)
 void stat_reset(void)
 {
     assert(stat != NULL);
+    size_t max_bytes = stat->max_bytes;
     memset(stat, 0, sizeof(struct lru_stat));
+    stat->max_bytes = max_bytes;
 }
 
 void 

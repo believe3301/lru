@@ -22,6 +22,10 @@ static enum test_return lru_normal_op(int new, size_t mb, char *key, size_t nkey
     int r = item_set(key, nkey, value, nvalue);
 
     if (r) {
+        if (new) {
+            lru_free();
+            stat_reset();
+        }
         return TEST_FAIL;
     }
 
@@ -48,7 +52,19 @@ static enum test_return lru_normal_test(void) {
 }
 
 static enum test_return lru_overwrite_test(void) {
-    return TEST_SKIP;
+    char *key = "key1";
+    char *value = "value1";
+    char *value2 = "value2";
+
+    lru_init(0);
+
+    item_set(key, strlen(key), value, strlen(value) + 1);
+
+    enum test_return r = lru_normal_op(0, 0, key, strlen(key), value2, strlen(value2) + 1);
+
+    lru_free();
+
+    return r;
 }
 
 static enum test_return lru_big_set_test(void) {
@@ -103,8 +119,8 @@ static enum test_return lru_evict_test(void) {
         memset(buf, 0, sizeof(buf));
     }
 
-    //evict 3
-    char *key2 = "key6";
+    //evict key1,key3 and replace key2
+    char *key2 = "key2";
     size_t nvalue2 = malloc * 2 + 2;
     char value2[nvalue2];
 
@@ -117,6 +133,9 @@ static enum test_return lru_evict_test(void) {
     assert(r == 0);
 
     for (i = 0; i < 3; i++) {
+        if (i == 1) {
+          continue;
+        }
         r = item_get(key[i], nkey, buf, sizeof(buf), &sz);
         assert(r == 1);
     }
@@ -133,12 +152,24 @@ static enum test_return lru_evict_test(void) {
     assert(sz == nvalue2);
     assert(memcmp(value2, buf, sz) == 0);
     memset(buf, 0, sizeof(buf));
+
+    lru_free();
     
     return TEST_PASS;
 }
 
 static enum test_return lru_stat_test(void) {
-    return TEST_SKIP;
+    char buf[1024];
+
+    stat_print(buf, sizeof(buf));
+    //printf("%s\n", buf);
+
+    stat_reset();
+
+    stat_print(buf, sizeof(buf));
+    //printf("%s\n", buf);
+
+    return TEST_PASS;
 }
 
 struct testcase testcases[] = {
