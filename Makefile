@@ -7,6 +7,9 @@ LIB_OBJS = \
 	./hash.o\
 	./lru.o
 
+LIB_JNI_OBJS = \
+	./binding/lru_jni.o
+
 TESTAPP_OBJS = \
 	./test/test.o
 
@@ -14,6 +17,8 @@ BENCH_OBJS = \
 	./test/bench.o
 
 LIBRARY = liblru.so
+
+LIBRARY_JNI = liblrujni.so
 
 TESTAPP = testapp
 
@@ -39,10 +44,18 @@ $(BENCH): $(LIB_OBJS) $(BENCH_OBJS)
 $(BENCH_OBJS): %.o: %.c
 	$(CC) $(CFLAGS) -I. $^ -c -o $@
 
+jni: $(LIBRARY_JNI)
+
+$(LIBRARY_JNI): $(LIB_OBJS) $(LIB_JNI_OBJS)
+	$(CC) -fPIC -shared $^ -o $@
+
+$(LIB_JNI_OBJS): %.o: %.c
+	$(CC) -fPIC $(CFLAGS) -I. $^ -c -o $@
+
 test: $(TESTAPP) $(BENCH)
 	./$(TESTAPP)
 	./$(BENCH)
 
 clean:
-	-rm -f $(LIB_OBJS)	$(TESTAPP_OBJS) $(BENCH_OBJS)
-	-rm -f $(LIBRARY)  $(TESTAPP) $(BENCH)
+	-rm -f $(LIB_OBJS) $(TESTAPP_OBJS) $(BENCH_OBJS) $(LIB_JNI_OBJS)
+	-rm -f $(LIBRARY) $(LIBRARY_JNI) $(TESTAPP) $(BENCH)
