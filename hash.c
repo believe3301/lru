@@ -1,6 +1,6 @@
 #include "lru.h"
 
-unsigned int hashpower = 16;
+unsigned int hashpower = 32;
 
 #define hashsize(n) ((size_t)1<<(n))
 #define hashmask(n) (hashsize(n)-1)
