@@ -91,10 +91,16 @@ item_get(const char *key, const size_t nkey, char *buf, const size_t nbuf, size_
     lru_item *it = do_item_get(key, nkey, hv);
     if (it != NULL) {
         stat->get_hits ++;
+        size_t vlen = it->nbytes - ITEM_size - it->nkey - 1;
 
-        *nvalue = it->nbytes - ITEM_size - it->nkey - 1;
-        void *data = ITEM_data(it);
-        memcpy(buf, data, MIN(nbuf, *nvalue));
+        if (nvalue) {
+            *nvalue = vlen;
+        }
+
+        if (buf && nbuf) {
+            void *data = ITEM_data(it);
+            memcpy(buf, data, MIN(nbuf, vlen));
+        }
         return 0;
     }
     stat->get_misses ++;

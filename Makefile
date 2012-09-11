@@ -24,7 +24,7 @@ TESTAPP = testapp
 
 BENCH = bench
 
-all: $(LIBRARY) $(TESTAPP) $(BENCH)
+all: $(LIBRARY) $(LIBRARY_JNI) $(TESTAPP) $(BENCH)
 
 $(LIBRARY): $(LIB_OBJS)
 	$(CC) -fPIC -shared $^ -o $@
