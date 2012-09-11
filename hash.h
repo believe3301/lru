@@ -1,4 +1,4 @@
-void hash_init(const int hashpower_init);
+int hash_init(const int hashpower_init);
 
 lru_item* hash_find(const char *key, const size_t nkey, const uint32_t hv);
 

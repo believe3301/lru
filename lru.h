@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#define MAX(a, b) (((a) > (b))?(a) : (b))
 #define MIN(a, b) (((a) > (b))?(b) : (a))
 #define MAXBYTE_DEDAULT 64 * 1024 * 1024 /* 64M */
 
@@ -48,13 +49,19 @@ typedef struct lru_stat {
     uint64_t del_hits;
     uint64_t del_misses;
 
+    unsigned int hash_power_level;
+    unsigned int hash_find_depth;
+    uint64_t hash_bytes;
+    
 
     uint64_t evictions;
 }lru_stat;
 
+extern lru_stat stat;
+
 #include "hash.h"
 
-void lru_init(size_t maxbytes);
+int lru_init(size_t maxbytes);
 
 /*
    0 success 

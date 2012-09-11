@@ -142,7 +142,7 @@ int main(int argc, char **argv) {
 
     int c;
     
-    while (-1 != (c = getopt(argc, argv, "n:m:k:d:h:"))) {
+    while (-1 != (c = getopt(argc, argv, "n:m:k:d:h"))) {
         switch(c) {
             case 'n':
                 config.num = atoi(optarg);

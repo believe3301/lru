@@ -6,30 +6,23 @@
 
 static lru_item *head = NULL;
 static lru_item *tail = NULL;
-static lru_stat *stat = NULL;
+lru_stat stat;
 
-void 
+int 
 lru_init(const size_t maxbytes)
 {
     head = NULL;
     tail = NULL;
-
-    if (!stat) {
-        stat = malloc(sizeof(lru_stat));
-        memset(stat, 0, sizeof(lru_stat));
-    }
     
     if (maxbytes <= 0) {
-        stat->max_bytes = MAXBYTE_DEDAULT;
+        stat.max_bytes = MAXBYTE_DEDAULT;
     } else {
-        stat->max_bytes = maxbytes;
+        stat.max_bytes = maxbytes;
     }
 
-
-    hash_init(0);
+    return hash_init(0);
 }
 
-/* TODO */
 static uint32_t 
 hash(const char *key, const int nkey)
 {
@@ -69,10 +62,10 @@ do_item_remove_hv(lru_item *it, const uint32_t hv)
     if (it->next) it->next->prev = it->prev;
     if (it->prev) it->prev->next = it->next;
 
-    stat->curr_items --;
-    stat->curr_bytes -= it->nbytes;
-    stat->free_bytes += it->nbytes;
-    stat->free++;
+    stat.curr_items --;
+    stat.curr_bytes -= it->nbytes;
+    stat.free_bytes += it->nbytes;
+    stat.free++;
     free(it);
 }
 
@@ -86,11 +79,11 @@ do_item_remove(lru_item *it)
 int
 item_get(const char *key, const size_t nkey, char *buf, const size_t nbuf, size_t *nvalue)
 {
-    stat->get_cmds++;
+    stat.get_cmds++;
     uint32_t hv = hash(key, nkey);
     lru_item *it = do_item_get(key, nkey, hv);
     if (it != NULL) {
-        stat->get_hits ++;
+        stat.get_hits ++;
         size_t vlen = it->nbytes - ITEM_size - it->nkey - 1;
 
         if (nvalue) {
@@ -103,7 +96,7 @@ item_get(const char *key, const size_t nkey, char *buf, const size_t nbuf, size_
         }
         return 0;
     }
-    stat->get_misses ++;
+    stat.get_misses ++;
     return 1;
 }
 
@@ -112,22 +105,22 @@ item_alloc(const size_t sz, lru_item *old)
 {
     void *m = NULL;
     int delta = old ? old->nbytes : 0;
-    if ((stat->curr_bytes + sz - delta) <= stat->max_bytes) {
+    if ((stat.curr_bytes + sz - delta) <= stat.max_bytes) {
         
         m = malloc(sz);
         if (!m) {
-            stat->malloc_failed += 1;
+            stat.malloc_failed += 1;
             return NULL;
         }
 
-    } else if (sz > stat->max_bytes) {
+    } else if (sz > stat.max_bytes) {
         return NULL;
 
     } else {
         //evict 
         assert(tail != NULL);
         lru_item *it = tail;
-        while((it != NULL) && (stat->curr_bytes + sz - delta) > stat->max_bytes) {
+        while((it != NULL) && (stat.curr_bytes + sz - delta) > stat.max_bytes) {
             if (it != old) {
                 do_item_remove(it);
                 it = tail;
@@ -135,26 +128,26 @@ item_alloc(const size_t sz, lru_item *old)
                 it = tail->prev;
             }
 
-            stat->evictions ++;
+            stat.evictions ++;
         }
         m = malloc(sz);
         if (!m) {
-            stat->malloc_failed += 1;
+            stat.malloc_failed += 1;
             return NULL;
         }
     }
-    stat->malloc ++;
-    stat->curr_bytes += sz;
-    stat->total_bytes += sz;
-    stat->curr_items ++;
-    stat->total_items ++;
+    stat.malloc ++;
+    stat.curr_bytes += sz;
+    stat.total_bytes += sz;
+    stat.curr_items ++;
+    stat.total_items ++;
     return m;
 }
 
 int 
 item_set(const char *key, const size_t nkey, const char *value, const size_t nvalue)
 {
-    stat->set_cmds ++;
+    stat.set_cmds ++;
 
     uint32_t hv = hash(key, nkey);
     lru_item *old = do_item_get(key, nkey, hv);
@@ -162,7 +155,7 @@ item_set(const char *key, const size_t nkey, const char *value, const size_t nva
     size_t isize = ITEM_size + nkey + 1 + nvalue;
     lru_item *it = item_alloc(isize, old);
     if (it == NULL) {
-        stat->set_failed ++;
+        stat.set_failed ++;
         return 1;
     }
 
@@ -188,16 +181,16 @@ item_set(const char *key, const size_t nkey, const char *value, const size_t nva
 int 
 item_delete(const char *key, const size_t nkey)
 {
-    stat->del_cmds++;
+    stat.del_cmds++;
     uint32_t hv = hash(key, nkey);
     lru_item *it = hash_find(key, nkey, hv);
 
     if (it != NULL) {
         do_item_remove_hv(it, hv);
-        stat->del_hits++;
+        stat.del_hits++;
         return 0;
     } else {
-        stat->del_misses++;
+        stat.del_misses++;
         return 1;
     }
 }
@@ -227,36 +220,39 @@ stat_print(char *buf, const int nbuf)
 {
     int remaining = nbuf;
 
-    append_stat(&buf, &remaining, "max_bytes","%llu",stat->max_bytes);
-    append_stat(&buf, &remaining, "total_items","%llu",stat->total_items);
-    append_stat(&buf, &remaining, "curr_items","%llu",stat->curr_items);
-    append_stat(&buf, &remaining, "total_bytes","%llu",stat->total_bytes);
-    append_stat(&buf, &remaining, "curr_bytes","%llu",stat->curr_bytes);
-    append_stat(&buf, &remaining, "malloc","%llu",stat->malloc);
-    append_stat(&buf, &remaining, "malloc_failed","%llu",stat->malloc_failed);
-    append_stat(&buf, &remaining, "free_bytes","%llu",stat->free_bytes);
-    append_stat(&buf, &remaining, "free","%llu",stat->free);
+    append_stat(&buf, &remaining, "max_bytes","%llu",stat.max_bytes);
+    append_stat(&buf, &remaining, "total_items","%llu",stat.total_items);
+    append_stat(&buf, &remaining, "curr_items","%llu",stat.curr_items);
+    append_stat(&buf, &remaining, "total_bytes","%llu",stat.total_bytes);
+    append_stat(&buf, &remaining, "curr_bytes","%llu",stat.curr_bytes);
+    append_stat(&buf, &remaining, "malloc","%llu",stat.malloc);
+    append_stat(&buf, &remaining, "malloc_failed","%llu",stat.malloc_failed);
+    append_stat(&buf, &remaining, "free_bytes","%llu",stat.free_bytes);
+    append_stat(&buf, &remaining, "free","%llu",stat.free);
 
-    append_stat(&buf, &remaining, "get_cmds","%llu",stat->get_cmds);
-    append_stat(&buf, &remaining, "get_hits","%llu",stat->get_hits);
-    append_stat(&buf, &remaining, "get_misses","%llu",stat->get_misses);
+    append_stat(&buf, &remaining, "get_cmds","%llu",stat.get_cmds);
+    append_stat(&buf, &remaining, "get_hits","%llu",stat.get_hits);
+    append_stat(&buf, &remaining, "get_misses","%llu",stat.get_misses);
 
-    append_stat(&buf, &remaining, "set_cmds","%llu",stat->set_cmds);
-    append_stat(&buf, &remaining, "set_failed","%llu",stat->set_failed);
+    append_stat(&buf, &remaining, "set_cmds","%llu",stat.set_cmds);
+    append_stat(&buf, &remaining, "set_failed","%llu",stat.set_failed);
 
-    append_stat(&buf, &remaining, "del_cmds","%llu",stat->del_cmds);
-    append_stat(&buf, &remaining, "del_hits","%llu",stat->del_hits);
-    append_stat(&buf, &remaining, "del_misses","%llu",stat->del_misses);
+    append_stat(&buf, &remaining, "del_cmds","%llu",stat.del_cmds);
+    append_stat(&buf, &remaining, "del_hits","%llu",stat.del_hits);
+    append_stat(&buf, &remaining, "del_misses","%llu",stat.del_misses);
 
-    append_stat(&buf, &remaining, "evictions","%llu",stat->evictions);
+    append_stat(&buf, &remaining, "hash_power_level","%u",stat.hash_power_level);
+    append_stat(&buf, &remaining, "hash_find_depth","%u",stat.hash_find_depth);
+    append_stat(&buf, &remaining, "hash_bytes","%llu",stat.hash_bytes);
+
+    append_stat(&buf, &remaining, "evictions","%llu",stat.evictions);
 }
 
 void stat_reset(void)
 {
-    assert(stat != NULL);
-    size_t max_bytes = stat->max_bytes;
-    memset(stat, 0, sizeof(struct lru_stat));
-    stat->max_bytes = max_bytes;
+    size_t max_bytes = stat.max_bytes;
+    memset(&stat, 0, sizeof(struct lru_stat));
+    stat.max_bytes = max_bytes;
 }
 
 void 

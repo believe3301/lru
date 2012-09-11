@@ -1,6 +1,6 @@
 #include "lru.h"
 
-unsigned int hashpower = 32;
+unsigned int hashpower = 16;
 
 #define hashsize(n) ((size_t)1<<(n))
 #define hashmask(n) (hashsize(n)-1)
@@ -8,13 +8,19 @@ unsigned int hashpower = 32;
 static lru_item** table;
 static unsigned int hash_items = 0;
 
-void 
+int 
 hash_init(const int hashpower_init)
 {
     if (hashpower_init > 0) {
         hashpower = hashpower_init;
     }
     table = calloc(hashsize(hashpower), sizeof(void *));
+
+    if (table) {
+        stat.hash_power_level = hashpower;
+        stat.hash_bytes = hashsize(hashpower) * sizeof(void *);
+    }
+    return table == NULL;
 }
 
 lru_item*
@@ -22,13 +28,16 @@ hash_find(const char *key, const size_t nkey, const uint32_t hv)
 {
     lru_item *it = table[hv & hashmask(hashpower)];
     lru_item *ret = NULL;
+    unsigned int depth = 0;
     while (it) {
         if ((nkey == it->nkey) && (memcmp(key, ITEM_key(it), nkey) == 0)) {
             ret = it;
             break;
         }
         it = it->h_next;
+        ++depth;  
     }
+    stat.hash_find_depth = MAX(stat.hash_find_depth, depth);
     return ret;
 }
 
