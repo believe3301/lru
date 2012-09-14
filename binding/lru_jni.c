@@ -65,7 +65,8 @@ RET:
 	if (buf) {
 		(*jenv)->ReleaseByteArrayElements(jenv, jbuf, (jbyte*)buf, 0);
 	}
-	return ret;
+
+	return ret ? 0 : sz;
 }
 
 /* remove */
