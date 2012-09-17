@@ -5,6 +5,11 @@
 #define MAX(a, b) (((a) > (b))?(a) : (b))
 #define MIN(a, b) (((a) > (b))?(b) : (a))
 #define MAXBYTE_DEDAULT 64 * 1024 * 1024 /* 64M */
+#define HASH_POWER_DEFAULT 16
+
+#define hashsize(n) ((size_t)1<<(n))
+#define hashmask(n) (hashsize(n)-1)
+
 
 #define ITEM_size   (sizeof(lru_item))
 
@@ -25,8 +30,6 @@ typedef struct lru_item_ {
 
 /* stat */
 typedef struct lru_stat {
-    uint64_t max_bytes;
-
     uint64_t total_items;
     uint64_t curr_items;
 
@@ -49,7 +52,6 @@ typedef struct lru_stat {
     uint64_t del_hits;
     uint64_t del_misses;
 
-    unsigned int hash_power_level;
     unsigned int hash_find_depth;
     uint64_t hash_bytes;
     
@@ -57,27 +59,39 @@ typedef struct lru_stat {
     uint64_t evictions;
 }lru_stat;
 
-extern lru_stat stat;
+typedef struct lru{
+    unsigned int hashpower;
+    uint64_t max_bytes;  /* max used bytes, include item size, not include hash bytes */
+
+    lru_item **table;   /* hash */
+    lru_item *head;     /* double link head */
+    lru_item *tail;     /* double link tail */
+
+    lru_stat stat;      /* stat */
+}lru;
+
 
 #include "hash.h"
 
-int lru_init(size_t maxbytes);
+lru* lru_init(const uint64_t maxbytes, const unsigned int hashpower);
 
 /*
    0 success 
    1 failed 
    alloc value buf by caller or add refcount by item...
 */
-int item_get(const char *key, const size_t nkey, char *buf, const size_t nbuf, size_t *nvalue);
+int item_get(lru *l, const char *key, const size_t nkey, char *buf, const size_t nbuf, size_t *nvalue);
 
 /* 0 success , 1 failed */
-int item_set(const char *key, const size_t nkey, const char *value, const size_t nvalue);
+int item_set(lru *l, const char *key, const size_t nkey, const char *value, const size_t nvalue);
 
 /* 0 hit, 1 miss */
-int item_delete(const char *key, const size_t nkey);
+int item_delete(lru *l, const char *key, const size_t nkey);
 
-void stat_reset(void);
+#define stat_reset(l) do { \
+    memset(&(l->stat), 0, sizeof(struct lru_stat)); \
+} while(0)
 
-void stat_print(char *buf, const int nbuf);
+void stat_print(lru *l, char *buf, const int nbuf);
 
-void lru_free(void);
+void lru_free(lru *l);

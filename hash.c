@@ -1,32 +1,9 @@
 #include "lru.h"
 
-unsigned int hashpower = 16;
-
-#define hashsize(n) ((size_t)1<<(n))
-#define hashmask(n) (hashsize(n)-1)
-
-static lru_item** table;
-static unsigned int hash_items = 0;
-
-int 
-hash_init(const int hashpower_init)
-{
-    if (hashpower_init > 0) {
-        hashpower = hashpower_init;
-    }
-    table = calloc(hashsize(hashpower), sizeof(void *));
-
-    if (table) {
-        stat.hash_power_level = hashpower;
-        stat.hash_bytes = hashsize(hashpower) * sizeof(void *);
-    }
-    return table == NULL;
-}
-
 lru_item*
-hash_find(const char *key, const size_t nkey, const uint32_t hv)
+hash_find(lru *l, const char *key, const size_t nkey, const uint32_t hv)
 {
-    lru_item *it = table[hv & hashmask(hashpower)];
+    lru_item *it = l->table[hv & hashmask(l->hashpower)];
     lru_item *ret = NULL;
     unsigned int depth = 0;
     while (it) {
@@ -37,25 +14,24 @@ hash_find(const char *key, const size_t nkey, const uint32_t hv)
         it = it->h_next;
         ++depth;  
     }
-    stat.hash_find_depth = MAX(stat.hash_find_depth, depth);
+    l->stat.hash_find_depth = MAX(l->stat.hash_find_depth, depth);
     return ret;
 }
 
 int 
-hash_insert(lru_item *it, const uint32_t hv)
+hash_insert(lru *l, lru_item *it, const uint32_t hv)
 {
-    it->h_next = table[hv & hashmask(hashpower)];
-    table[hv & hashmask(hashpower)] = it;
-    hash_items++;
+    it->h_next = l->table[hv & hashmask(l->hashpower)];
+    l->table[hv & hashmask(l->hashpower)] = it;
     return 1;
 }
 
 static lru_item** 
-hashitem_before (const char *key, const size_t nkey, const uint32_t hv) 
+hashitem_before (lru *l, const char *key, const size_t nkey, const uint32_t hv) 
 {
     lru_item **pos;
 
-    pos = &table[hv & hashmask(hashpower)];
+    pos = &(l->table[hv & hashmask(l->hashpower)]);
 
     while (*pos && ((nkey != (*pos)->nkey) || memcmp(key, ITEM_key(*pos), nkey))) {
         pos = &(*pos)->h_next;
@@ -64,21 +40,14 @@ hashitem_before (const char *key, const size_t nkey, const uint32_t hv)
 }
 
 void 
-hash_delete(const char *key, const size_t nkey, const uint32_t hv)
+hash_delete(lru *l, const char *key, const size_t nkey, const uint32_t hv)
 {
-    lru_item **before = hashitem_before(key, nkey, hv);
+    lru_item **before = hashitem_before(l, key, nkey, hv);
 
     if (*before) {
         lru_item *nxt;
-        hash_items--;
         nxt = (*before)->h_next;
-        (*before)->h_next = 0;   /* probably pointless, but whatever. */
+        (*before)->h_next = 0;  
         *before = nxt;
     }
-}
-
-void
-hash_free(void)
-{
-    free(table);
 }

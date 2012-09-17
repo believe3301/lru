@@ -13,13 +13,15 @@ static struct config {
     int num;
     int keysize;
     int datasize;
+    int hashpower;
 }config;
 
 static void usage(void) {
     printf("-n <num>    total number of loop(default 1000,000)\n"
-           "-m <num>    max memory for userd in megabytes(default 64MB)\n"
+           "-m <num>    max memory for userd in megabytes(default 512MB)\n"
            "-k <num>    key size(default 16B)\n"
            "-d <num>    data size(default 32B)\n"
+           "-p <num>    hash power level(default 16, 64K)\n"
            "-h          print this help and exit\n");
 }
 
@@ -68,6 +70,7 @@ static void print_env(void) {
 
     printf("DataSize:    %.1f MB\n", (1L *(config.keysize + config.datasize) * config.num ) / 1048576.0);
     printf("TotalSize:   %.1f MB\n", (1L *(config.keysize + config.datasize + ITEM_size) * config.num ) / 1048576.0);
+    printf("CacheSize:   %.1f MB\n", config.maxbytes / 1048576.0);
     printf("-----------------------------------------\n");
 }
 
@@ -124,14 +127,15 @@ static void bench_stop(void) {
 
 static void config_init(void) {
     config.num = 1000000;
-    config.maxbytes = 64 * 1024 * 1024;
+    config.maxbytes = 512 * 1024 * 1024;
     config.keysize = 16;
     config.datasize = 32;
+    config.hashpower = 16;
 }
 
-static void print_stat(void) {
+static void print_stat(lru *l) {
     char bstat[1024];
-    stat_print(bstat, sizeof(bstat));
+    stat_print(l, bstat, sizeof(bstat));
     printf("-----------------------------------------\n");
     printf("STAT\n%s", bstat);
     printf("-----------------------------------------\n");
@@ -142,7 +146,7 @@ int main(int argc, char **argv) {
 
     int c;
     
-    while (-1 != (c = getopt(argc, argv, "n:m:k:d:h"))) {
+    while (-1 != (c = getopt(argc, argv, "n:m:k:d::p:h"))) {
         switch(c) {
             case 'n':
                 config.num = atoi(optarg);
@@ -156,6 +160,9 @@ int main(int argc, char **argv) {
             case 'd':
                 config.datasize = atoi(optarg);
                 break;
+            case 'p':
+                config.hashpower = atoi(optarg);
+                break;
             case 'h':
                 usage();
                 return EXIT_SUCCESS;
@@ -167,7 +174,7 @@ int main(int argc, char **argv) {
 
     generate_key_init();
     print_env();
-    lru_init(config.maxbytes);
+    lru *l = lru_init(config.maxbytes, config.hashpower);
 
     char *bvalue = malloc(config.datasize);
     memset(bvalue, 'x', config.datasize);
@@ -182,12 +189,12 @@ int main(int argc, char **argv) {
     int i;
     for (i = 0; i < config.num; i++) {
         snprintf(key, config.keysize, fmt_, gnum, generate_key(gnum), i);
-        int r = item_set(key, config.keysize, bvalue, config.datasize);
+        int r = item_set(l, key, config.keysize, bvalue, config.datasize);
         assert(r == 0);
         process_report();
     }
     bench_stop();
-    print_stat();
+    print_stat(l);
 
     char *buf = malloc(config.datasize);
     size_t sz;
@@ -195,7 +202,7 @@ int main(int argc, char **argv) {
     bench_start("GET");
     for (i = 0; i < config.num; i++) {
         snprintf(key, config.keysize, fmt_, gnum, generate_key(gnum), i);
-        int r = item_get(key, config.keysize, buf, config.datasize, &sz);
+        int r = item_get(l, key, config.keysize, buf, config.datasize, &sz);
         if (!r) {
             assert((int)sz == config.datasize);
             assert(memcmp(bvalue, buf, config.datasize) == 0);
@@ -204,17 +211,17 @@ int main(int argc, char **argv) {
         process_report();
     }
     bench_stop();
-    print_stat();
+    print_stat(l);
 
     generate_key_reset();
     bench_start("DELETE");
     for (i = 0; i < config.num; i++) {
         snprintf(key, config.keysize, fmt_, gnum, generate_key(gnum), i);
-        item_delete(key, config.keysize);
+        item_delete(l, key, config.keysize);
         process_report();
     }
     bench_stop();
-    print_stat();
+    print_stat(l);
     
     free(buf);
     free(bvalue);
@@ -222,7 +229,7 @@ int main(int argc, char **argv) {
     free(fmt_);
     free(key_);
    
-    lru_free();
+    lru_free(l);
     /*
     printf("print any key to exit...\n");
     getchar();
