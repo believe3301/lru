@@ -18,10 +18,10 @@ lru_init(const uint64_t maxbytes, const unsigned int hashpower)
         fprintf(stderr, "hash power must less than 32.\n");
         return NULL;
     } else {
-        l->hashpower = hashpower <= 0 ? HASH_POWER_DEFAULT: hashpower;
+        l->hashpower = hashpower == 0 ? HASH_POWER_DEFAULT: hashpower;
     }
 
-    l->max_bytes = maxbytes <=0 ? MAXBYTE_DEDAULT: maxbytes;
+    l->max_bytes = maxbytes ==0 ? MAXBYTE_DEDAULT: maxbytes;
     l->table = calloc(hashsize(l->hashpower), sizeof(void *));
 
     if (l->table == NULL) {

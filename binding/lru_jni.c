@@ -9,7 +9,6 @@ Java_com_feinno_kv_MemDB_open(JNIEnv *jenv, jobject clazz, jlong bufsize, jint h
     (void) jenv;
 
     lru *l = lru_init((uint64_t) bufsize, (unsigned int) hashpower);
-
     return (jlong)(intptr_t)l;
 }
 
@@ -106,6 +105,7 @@ Java_com_feinno_kv_MemDB_info(JNIEnv *jenv, jobject clazz, jlong ptr, jbyteArray
     buf = (char*)(*jenv)->GetByteArrayElements(jenv, jbuf, 0);
     if (buf) {
         stat_print(l, buf, (int)jblen);
+		(*jenv)->ReleaseByteArrayElements(jenv, jbuf, (jbyte*)buf, 0);
     }
 }
 
