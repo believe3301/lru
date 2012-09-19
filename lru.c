@@ -273,4 +273,5 @@ lru_free(lru *l)
     assert(l->tail == NULL);
     //free hashtable
     free(l->table);
+    free(l);
 }

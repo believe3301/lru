@@ -177,6 +177,8 @@ static enum test_return lru_stat_test(void) {
     stat_print(l, buf, sizeof(buf));
     printf("%s\n", buf);
 
+    lru_free(l);
+
     return TEST_PASS;
 }
 
