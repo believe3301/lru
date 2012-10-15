@@ -1,10 +1,21 @@
-lru kv(Least Recently Used) 
-===
-introduce
+a simple lru kv cache library
+==============================
 
-compile
+Introduce
+------------
+A simple lru kv cache library,and implement similar as memcached lru.
 
-test
+Compile
+----------
+It is as simple as:
+    
+    % make
 
-stat
+Test
+--------
+Using:
+
+    % make test
+
+
 
