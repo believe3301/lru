@@ -1,0 +1,6 @@
+TODO:
+	* add varint coding
+	* support snappy and hugepage
+
+2012-10-15
+	* change readme
