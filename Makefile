@@ -26,6 +26,8 @@ BENCH = bench
 
 all: $(LIBRARY) $(LIBRARY_JNI) $(TESTAPP) $(BENCH)
 
+.PHONY: all
+
 $(LIBRARY): $(LIB_OBJS)
 	$(CC) -fPIC -shared $^ -o $@
 
@@ -59,3 +61,5 @@ test: $(TESTAPP) $(BENCH)
 clean:
 	-rm -f $(LIB_OBJS) $(TESTAPP_OBJS) $(BENCH_OBJS) $(LIB_JNI_OBJS)
 	-rm -f $(LIBRARY) $(LIBRARY_JNI) $(TESTAPP) $(BENCH)
+
+.PHONY: clean
